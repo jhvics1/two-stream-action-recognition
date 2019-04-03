@@ -21,12 +21,15 @@ class spatial_dataset(Dataset):
     def load_ucf_image(self,video_name, index):
         if video_name.split('_')[0] == 'HandstandPushups':
             n,g = video_name.split('_',1)
-            name = 'HandStandPushups_'+g
-            path = self.root_dir + 'HandstandPushups'+'/separated_images/v_'+name+'/v_'+name+'_'
+            #name = 'HandStandPushups_'+g
+            #path = self.root_dir + 'HandstandPushups'+'/separated_images/v_'+name+'/v_'+name+'
+            path = self.root_dir + '/v_'+video_name+'/frame'
         else:
-            path = self.root_dir + video_name.split('_')[0]+'/separated_images/v_'+video_name+'/v_'+video_name+'_'
+            #path = self.root_dir + video_name.split('_')[0]+'/separated_images/v_'+video_name+'/v_'+video_name+'_'
+            path = self.root_dir + '/v_'+video_name+'/frame'
          
-        img = Image.open(path +str(index)+'.jpg')
+        #img = Image.open(path +str(index)+'.jpg')
+        img = Image.open(path +'{:06d}'.format(index)+'.jpg')
         transformed_img = self.transform(img)
         img.close()
 
@@ -80,7 +83,8 @@ class spatial_dataloader():
 
     def load_frame_count(self):
         #print '==> Loading frame number of each video'
-        with open('dic/frame_count.pickle','rb') as file:
+        #with open('dic/frame_count.pickle','rb') as file:
+        with open('dataloader/dic/frame_count.pickle','rb') as file:
             dic_frame = pickle.load(file)
         file.close()
 
@@ -161,7 +165,7 @@ class spatial_dataloader():
 if __name__ == '__main__':
     
     dataloader = spatial_dataloader(BATCH_SIZE=1, num_workers=1, 
-                                path='/home/ubuntu/data/UCF101/spatial_no_sampled/', 
-                                ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+                                path='../dataset/jpegs_256/', 
+                                ucf_list='UCF_list/',
                                 ucf_split='01')
     train_loader,val_loader,test_video = dataloader.run()

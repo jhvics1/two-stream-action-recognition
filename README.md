@@ -20,7 +20,6 @@ We use a spatial and motion stream cnn with ResNet101 for modeling video informa
   wget http://ftp.tugraz.at/pub/feichtenhofer/tsfusion/data/ucf101_jpegs_256.zip.003
   
   cat ucf101_jpegs_256.zip* > ucf101_jpegs_256.zip
-  unzip ucf101_jpegs_256.zip
   ```
   * Optical Flow
   ```
@@ -29,9 +28,20 @@ We use a spatial and motion stream cnn with ResNet101 for modeling video informa
   wget http://ftp.tugraz.at/pub/feichtenhofer/tsfusion/data/ucf101_tvl1_flow.zip.003
   
   cat ucf101_tvl1_flow.zip* > ucf101_tvl1_flow.zip
-  unzip ucf101_tvl1_flow.zip
   ```
-  
+  * Create directory to locate those downloaded dataset as follows
+  ```
+  # At the project directory (ex: /../two-stream-action-recognition)
+  mkdir ../dataset
+  mv ucf101_jpegs_256.zi ../dataset
+  mv ucf101_tvl1_flow.zip ../dataset
+
+  cd ../dataset
+  unzip ucf101_jpegs_256.zip
+  unzip ucf101_tvl1_flow.zip
+
+  ```
+
 
 ## 2. Model
   ### 2.1 Spatial cnn
@@ -48,9 +58,11 @@ We use a spatial and motion stream cnn with ResNet101 for modeling video informa
   * In every mini-batch, we randomly select 64 (batch size) videos from 9537 training videos and futher randomly select 1 stacked optical flow in each video. 
   ### 3.3 Data augmentation
   * Both stream apply the same data augmentation technique such as random cropping.
+
 ## 4. Testing method
   * For every 3783 testing videos, we uniformly sample 19 frames in each video and the video level prediction is the voting result of all 19 frame level predictions.
   * The reason we choose the number 19 is that the minimun number of video frames in UCF101 is 28 and we have to make sure there are sufficient frames for testing in 10 stack motion stream.
+  
 ## 5. Performace
    
  network      | top1  |

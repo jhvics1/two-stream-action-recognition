@@ -17,9 +17,13 @@ if __name__ == '__main__':
         opf =pickle.load(f)
     f.close()
 
+    # dataloader = dataloader.spatial_dataloader(BATCH_SIZE=1, num_workers=1, 
+    #                                path='/home/ubuntu/data/UCF101/spatial_no_sampled/', 
+    #                                ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+    #                                ucf_split='01')
     dataloader = dataloader.spatial_dataloader(BATCH_SIZE=1, num_workers=1, 
-                                    path='/home/ubuntu/data/UCF101/spatial_no_sampled/', 
-                                    ucf_list='/home/ubuntu/cvlab/pytorch/ucf101_two_stream/github/UCF_list/',
+                                    path='../dataset/jpegs_256/', 
+                                    ucf_list='UCF_list/',
                                     ucf_split='01')
     train_loader,val_loader,test_video = dataloader.run()
 
