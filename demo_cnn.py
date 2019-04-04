@@ -8,6 +8,11 @@ from network import *
 import dataloader
 
 
+font                   = cv2.FONT_HERSHEY_SIMPLEX
+bottomLeftCornerOfText = (10,500)
+fontScale              = 1
+fontColor              = (255,255,255)
+lineType               = 2
 
 parser = argparse.ArgumentParser(description='DEMO application')
 parser.add_argument('--path', default='', type=str, metavar='PATH', help='path to the video file to play (default: none)')
@@ -31,13 +36,20 @@ def main():
 
     for image in images:
         im = cv2.imread(image)
-        blur = cv2.GaussianBlur(im,(0,0),1)
-        cv2.imshow('Action Recognition',blur)
-        cv2.imwrite('MyPic.jpg', blur)
+        #im = cv2.resize(im,(224,224))
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(im,'Hello World!', 
+                    bottomLeftCornerOfText, 
+                    font, 
+                    fontScale,
+                    fontColor,
+                    lineType)
+        cv2.imshow('Action Recognition',im)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        sleep(0.2)
+        sleep(0.1)
 
+    cv2.destroyAllWindows()
 
 if __name__=='__main__':
     main()    
