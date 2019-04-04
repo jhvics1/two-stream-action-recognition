@@ -37,7 +37,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='man
 
 
 font                   = cv2.FONT_HERSHEY_SIMPLEX
-bottomLeftCornerOfText = (20,100)
+bottomLeftCornerOfText = (20,50)
 fontScale              = 1
 fontColor              = (255*random.random(), 255*random.random(), 255*random.random())
 lineType               = 2
@@ -191,7 +191,7 @@ class Motion_CNN():
 
             im = cv2.imread(image)
             height, width = im.shape[:2]
-            im = cv2.resize(im, (width*2, height*2), interpolation = cv2.INTER_AREA)
+            im = cv2.resize(im, (width*3, height*3), interpolation = cv2.INTER_AREA)
             #im = cv2.resize(im,(224,224))
             cv2.putText(im,'Actual : {0}({1}), Pred : {2}'.format(label, filename.split('_',1)[0], prediction), 
                         bottomLeftCornerOfText, 
