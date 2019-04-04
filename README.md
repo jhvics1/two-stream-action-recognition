@@ -5,6 +5,18 @@ We use a spatial and motion stream cnn with ResNet101 for modeling video informa
 *  [[2] Temporal Segment Networks: Towards Good Practices for Deep Action Recognition](https://link.springer.com/chapter/10.1007/978-3-319-46484-8_2)
 * [[3] TS-LSTM and Temporal-Inception: Exploiting Spatiotemporal Dynamics for Activity Recognition](https://arxiv.org/abs/1703.10667)
 
+## 0. Pre-requisite
+  ### 0.1 Virtual Environment
+  ```
+  pip install virtualenv
+  virtualenv twostream
+  source twostream/bin/activate
+  ```
+  ### 0.2 Install packages
+  ```
+  pip install -r requirements.txt
+  ```
+
 ## 1. Data
   ### 1.1 Spatial input data -> rgb frames
   * We extract RGB frames from each video in UCF101 dataset with sampling rate: 10 and save as .jpg image in disk which cost about 5.9G.
@@ -62,7 +74,7 @@ We use a spatial and motion stream cnn with ResNet101 for modeling video informa
 ## 4. Testing method
   * For every 3783 testing videos, we uniformly sample 19 frames in each video and the video level prediction is the voting result of all 19 frame level predictions.
   * The reason we choose the number 19 is that the minimun number of video frames in UCF101 is 28 and we have to make sure there are sufficient frames for testing in 10 stack motion stream.
-  
+
 ## 5. Performace
    
  network      | top1  |
