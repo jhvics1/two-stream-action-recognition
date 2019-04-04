@@ -20,7 +20,6 @@ from utils import *
 from network import *
 import dataloader
 
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 parser = argparse.ArgumentParser(description='UCF101 motion stream on resnet101')
@@ -42,7 +41,7 @@ def main():
                         num_workers=8,
                         path='../dataset/tvl1_flow/',
                         ucf_list='UCF_list/',
-                        ucf_split='01',
+                        ucf_split='04',
                         in_channel=10,
                         )
     
@@ -156,14 +155,20 @@ class Motion_CNN():
             target_var = Variable(label).cuda()
 
             # compute output
+            print(' Shape of input data {0}'.format(input_var.shape))
             output = self.model(input_var)
             loss = self.criterion(output, target_var)
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, label, topk=(1, 5))
-            losses.update(loss.data[0], data.size(0))
-            top1.update(prec1[0], data.size(0))
-            top5.update(prec5[0], data.size(0))
+            ############## Orignal Codes ################
+            #losses.update(loss.data[0], data.size(0))
+            #top1.update(prec1[0], data.size(0))
+            #top5.update(prec5[0], data.size(0))
+            ############## Modification #################
+            losses.update(loss.data, data.size(0))
+            top1.update(prec1, data.size(0))
+            top5.update(prec5, data.size(0))
 
             # compute gradient and do SGD step
             self.optimizer.zero_grad()
@@ -199,11 +204,12 @@ class Motion_CNN():
         for i, (keys,data,label) in enumerate(progress):
             
             #data = data.sub_(127.353346189).div_(14.971742063)
-            label = label.cuda(async=True)
+            #label = label.cuda(async=True)
             data_var = Variable(data, volatile=True).cuda(async=True)
-            label_var = Variable(label, volatile=True).cuda(async=True)
+            #label_var = Variable(label, volatile=True).cuda(async=True)
 
             # compute output
+            print(' Shape of input data {0} : {1}'.format(keys, data_var.shape))
             output = self.model(data_var)
 
             # measure elapsed time
@@ -236,6 +242,7 @@ class Motion_CNN():
         video_level_preds = np.zeros((len(self.dic_video_level_preds),101))
         video_level_labels = np.zeros(len(self.dic_video_level_preds))
         ii=0
+
         for key in sorted(self.dic_video_level_preds.keys()):
             name = key.split('-',1)[0]
 
@@ -247,7 +254,8 @@ class Motion_CNN():
             ii+=1         
             if np.argmax(preds) == (label):
                 correct+=1
-
+            # print('==> Label(String : Number) :[{0} : {1}]'.format(name, label))
+            # print('==> Preds :[{0}]'.format(zip(self.dic_video_level_preds.keys(), preds)))
         #top1 top5
         video_level_labels = torch.from_numpy(video_level_labels).long()
         video_level_preds = torch.from_numpy(video_level_preds).float()
