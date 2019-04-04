@@ -20,6 +20,11 @@ from utils import *
 from network import *
 import dataloader
 
+import cv2
+import glob
+import random
+from time import sleep
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 parser = argparse.ArgumentParser(description='UCF101 motion stream on resnet101')
@@ -29,6 +34,14 @@ parser.add_argument('--lr', default=1e-2, type=float, metavar='LR', help='initia
 parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
+
+
+font                   = cv2.FONT_HERSHEY_SIMPLEX
+bottomLeftCornerOfText = (20,200)
+fontScale              = 0.5
+fontColor              = (255*random.random(), 255*random.random(), 255*random.random())
+lineType               = 2
+
 
 def main():
     global arg
@@ -41,7 +54,7 @@ def main():
                         num_workers=8,
                         path='../dataset/tvl1_flow/',
                         ucf_list='UCF_list/',
-                        ucf_split='04',
+                        ucf_split='01',
                         in_channel=10,
                         )
     
@@ -63,7 +76,8 @@ def main():
                         test_video=test_video
                         )
     #Training
-    model.run()
+    #model.run()
+    model.get_prediction('adf')
 
 class Motion_CNN():
     def __init__(self, nb_epochs, lr, batch_size, resume, start_epoch, evaluate, train_loader, test_loader, channel,test_video):
@@ -107,6 +121,90 @@ class Motion_CNN():
             prec1, val_loss = self.validate_1epoch()
             return
     
+    def get_prediction(self, path):
+        self.build_model()
+        self.resume = 'model_motion/model_best.pth.tar'
+        if self.resume:
+            if os.path.isfile(self.resume):
+                print("==> loading checkpoint '{}'".format(self.resume))
+                checkpoint = torch.load(self.resume)
+                self.start_epoch = checkpoint['epoch']
+                self.best_prec1 = checkpoint['best_prec1']
+                self.model.load_state_dict(checkpoint['state_dict'])
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
+                print("==> loaded checkpoint '{}' (epoch {}) (best_prec1 {})"
+                  .format(self.resume, checkpoint['epoch'], self.best_prec1))
+            else:
+                print("==> no checkpoint found at '{}'".format(self.resume))
+
+        self.epoch=0
+        
+        cudnn.benchmark = True
+
+        self.model.eval()
+        self.dic_video_level_preds={}
+
+        progress = tqdm(self.test_loader)
+        for i, (keys,data,label) in enumerate(progress):
+            
+            data_var = Variable(data, volatile=True).cuda(async=True)
+           
+            # compute output
+            # print(' Shape of input data {0} : {1}'.format(keys, data_var.shape))
+            output = self.model(data_var)
+
+            preds = output.data.cpu().numpy()
+            nb_data = preds.shape[0]
+            for j in range(nb_data):
+                videoName = keys[j].split('-',1)[0] # ApplyMakeup_g01_c01
+                # print(' Video Name : {0}'.format(videoName))
+                if videoName not in self.dic_video_level_preds.keys():
+                    self.dic_video_level_preds[videoName] = preds[j,:]
+                else:
+                    self.dic_video_level_preds[videoName] += preds[j,:]
+        
+        video_level_preds = np.zeros((len(self.dic_video_level_preds),101))
+        video_level_labels = np.zeros(len(self.dic_video_level_preds))
+        ii=0
+
+        for key in sorted(self.dic_video_level_preds.keys()):
+            name = key.split('-',1)[0]
+
+            preds = self.dic_video_level_preds[name]
+            label = int(self.test_video[name])-1
+                
+            video_level_preds[ii,:] = preds
+            video_level_labels[ii] = label
+            ii+=1         
+
+            prediction = np.argmax(preds)
+            print('==> Name : {0}, Actual :{1}, Prediction : {2}'.format(name, label, prediction))
+            
+            self.show_video(path, name, label, prediction)
+
+    def show_video(self, path, filename, label, prediction):
+        print ('Fullpath : {0}/v_{1}/*jpg'.format(path, filename))
+        images = [file for file in glob.glob('{0}/v_{1}/*jpg'.format(path, filename))]
+        images.sort()
+        print ('size of images : {0}'.format(len(images)))
+        for image in images:
+           
+
+            im = cv2.imread(image)
+            #im = cv2.resize(im,(224,224))
+            cv2.putText(im,'Actual : {0}, Pred : {1}'.format(label, prediction), 
+                        bottomLeftCornerOfText, 
+                        font, 
+                        fontScale,
+                        fontColor,
+                        lineType)
+            cv2.imshow('Action Recognition',im)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            sleep(0.05)
+
+        cv2.destroyAllWindows()
+
     def run(self):
         self.build_model()
         self.resume_and_evaluate()
