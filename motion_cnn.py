@@ -49,6 +49,9 @@ def main():
     print arg
 
     #Prepare DataLoader
+    # path : acutal location where network could find the data for training & testing
+    # ucf_list : location where the list of classes & name of target videos for training & testing
+    # ucf_split : target list number (there 3 splits, 04 is custom one)
     data_loader = dataloader.Motion_DataLoader(
                         BATCH_SIZE=arg.batch_size,
                         num_workers=8,
@@ -120,7 +123,7 @@ class Motion_CNN():
             self.epoch=0
             prec1, val_loss = self.validate_1epoch()
             return
-    
+    # custom logic by Jay
     def get_prediction(self, path):
         self.build_model()
         self.resume = 'model_motion/model_best.pth.tar'
