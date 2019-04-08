@@ -1,19 +1,19 @@
-import numpy as np
-import pickle
-from PIL import Image
-import time
+# import numpy as np
+# import pickle
+# from PIL import Image
+# import time
 import tqdm
-import shutil
-from random import randint
+# import shutil
+# from random import randint
 import argparse
 
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
-import torchvision.models as models
-import torch.nn as nn
-import torch
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
+# from torch.utils.data import Dataset, DataLoader
+# import torchvision.transforms as transforms
+# import torchvision.models as models
+# import torch.nn as nn
+# import torch
+# import torch.backends.cudnn as cudnn
+# from torch.autograd import Variable
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from utils import *
@@ -25,7 +25,8 @@ import glob
 import random
 from time import sleep
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 parser = argparse.ArgumentParser(description='UCF101 motion stream on resnet101')
 parser.add_argument('--epochs', default=500, type=int, metavar='N', help='number of total epochs')
@@ -35,12 +36,11 @@ parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='ev
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 
-
-font                   = cv2.FONT_HERSHEY_SIMPLEX
-bottomLeftCornerOfText = (20,50)
-fontScale              = 1
-fontColor              = (255*random.random(), 255*random.random(), 255*random.random())
-lineType               = 2
+font = cv2.FONT_HERSHEY_SIMPLEX
+bottomLeftCornerOfText = (20, 50)
+fontScale = 1
+fontColor = (255 * random.random(), 255 * random.random(), 255 * random.random())
+lineType = 2
 
 
 def main():
@@ -48,63 +48,73 @@ def main():
     arg = parser.parse_args()
     print arg
 
-    #Prepare DataLoader
+    # Prepare DataLoader
     # path : acutal location where network could find the data for training & testing
     # ucf_list : location where the list of classes & name of target videos for training & testing
     # ucf_split : target list number (there 3 splits, 04 is custom one)
     data_loader = dataloader.Motion_DataLoader(
-                        BATCH_SIZE=arg.batch_size,
-                        num_workers=8,
-                        path='../dataset/tvl1_flow/',
-                        ucf_list='UCF_list/',
-                        ucf_split='01',
-                        in_channel=10,
-                        )
-    
-    train_loader,test_loader, test_video = data_loader.run()
-    #Model 
+        BATCH_SIZE=arg.batch_size,
+        num_workers=8,
+        path='../dataset/tvl1_flow/',
+        ucf_list='UCF_list/',
+        ucf_split='01',
+        in_channel=10,
+    )
+
+    train_loader, test_loader, test_video = data_loader.run()
+    # Model
     model = Motion_CNN(
-                        # Data Loader
-                        train_loader=train_loader,
-                        test_loader=test_loader,
-                        # Utility
-                        start_epoch=arg.start_epoch,
-                        resume=arg.resume,
-                        evaluate=arg.evaluate,
-                        # Hyper-parameter
-                        nb_epochs=arg.epochs,
-                        lr=arg.lr,
-                        batch_size=arg.batch_size,
-                        channel = 10*2,
-                        test_video=test_video
-                        )
-    #Training
-    #model.run()
+        # Data Loader
+        train_loader=train_loader,
+        test_loader=test_loader,
+        # Utility
+        start_epoch=arg.start_epoch,
+        resume=arg.resume,
+        evaluate=arg.evaluate,
+        # Hyper-parameter
+        nb_epochs=arg.epochs,
+        lr=arg.lr,
+        batch_size=arg.batch_size,
+        channel=10 * 2,
+        test_video=test_video
+    )
+    # Training
+    # model.run()
     model.get_prediction('adf')
 
+
 class Motion_CNN():
-    def __init__(self, nb_epochs, lr, batch_size, resume, start_epoch, evaluate, train_loader, test_loader, channel,test_video):
-        self.nb_epochs=nb_epochs
-        self.lr=lr
-        self.batch_size=batch_size
-        self.resume=resume
-        self.start_epoch=start_epoch
-        self.evaluate=evaluate
-        self.train_loader=train_loader
-        self.test_loader=test_loader
-        self.best_prec1=0
-        self.channel=channel
-        self.test_video=test_video
+    def __init__(self, nb_epochs, lr, batch_size, resume, start_epoch, evaluate, train_loader, test_loader, channel,
+                 test_video):
+        self.nb_epochs = nb_epochs
+        self.lr = lr
+        self.batch_size = batch_size
+        self.resume = resume
+        self.start_epoch = start_epoch
+        self.evaluate = evaluate
+        self.train_loader = train_loader
+        self.test_loader = test_loader
+        self.best_prec1 = 0
+        self.channel = channel
+        self.test_video = test_video
 
     def build_model(self):
         print ('==> Build model and setup loss and optimizer')
-        #build model
-        self.model = resnet101(pretrained= True, channel=self.channel).cuda()
-        #print self.model
-        #Loss function and optimizer
-        self.criterion = nn.CrossEntropyLoss().cuda()
+        ## 1. build model
+        ## GPU Model #####################################################################
+        # self.model = resnet101(pretrained= True, channel=self.channel).cuda()
+        ## 2. print self.model
+        ## 3. Loss function and optimizer
+        # self.criterion = nn.CrossEntropyLoss().cuda()
+        # self.optimizer = torch.optim.SGD(self.model.parameters(), self.lr, momentum=0.9)
+        # self.scheduler = ReduceLROnPlateau(self.optimizer, 'min', patience=1,verbose=True)
+        ##################################################################################
+
+        ## CPU Model #####################################################################
+        self.model = resnet101(pretrained=True, channel=self.channel).cpu()
+        self.criterion = nn.CrossEntropyLoss().cpu()
         self.optimizer = torch.optim.SGD(self.model.parameters(), self.lr, momentum=0.9)
-        self.scheduler = ReduceLROnPlateau(self.optimizer, 'min', patience=1,verbose=True)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, 'min', patience=1, verbose=True)
 
     def resume_and_evaluate(self):
         if self.resume:
@@ -116,13 +126,14 @@ class Motion_CNN():
                 self.model.load_state_dict(checkpoint['state_dict'])
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
                 print("==> loaded checkpoint '{}' (epoch {}) (best_prec1 {})"
-                  .format(self.resume, checkpoint['epoch'], self.best_prec1))
+                      .format(self.resume, checkpoint['epoch'], self.best_prec1))
             else:
                 print("==> no checkpoint found at '{}'".format(self.resume))
         if self.evaluate:
-            self.epoch=0
+            self.epoch = 0
             prec1, val_loss = self.validate_1epoch()
             return
+
     # custom logic by Jay
     def get_prediction(self, path):
         self.build_model()
@@ -130,28 +141,28 @@ class Motion_CNN():
         if self.resume:
             if os.path.isfile(self.resume):
                 print("==> loading checkpoint '{}'".format(self.resume))
-                checkpoint = torch.load(self.resume)
+                checkpoint = torch.load(self.resume, map_location='cpu')
                 self.start_epoch = checkpoint['epoch']
                 self.best_prec1 = checkpoint['best_prec1']
                 self.model.load_state_dict(checkpoint['state_dict'])
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
                 print("==> loaded checkpoint '{}' (epoch {}) (best_prec1 {})"
-                  .format(self.resume, checkpoint['epoch'], self.best_prec1))
+                      .format(self.resume, checkpoint['epoch'], self.best_prec1))
             else:
                 print("==> no checkpoint found at '{}'".format(self.resume))
 
-        self.epoch=0
-        
+        self.epoch = 0
+
         cudnn.benchmark = True
 
         self.model.eval()
-        self.dic_video_level_preds={}
+        self.dic_video_level_preds = {}
 
         progress = tqdm(self.test_loader)
-        for i, (keys,data,label) in enumerate(progress):
-            
-            data_var = Variable(data, volatile=True).cuda(async=True)
-           
+        for i, (keys, data, label) in enumerate(progress):
+
+            data_var = Variable(data, volatile=True).cpu()
+
             # compute output
             # print(' Shape of input data {0} : {1}'.format(keys, data_var.shape))
             output = self.model(data_var)
@@ -159,30 +170,30 @@ class Motion_CNN():
             preds = output.data.cpu().numpy()
             nb_data = preds.shape[0]
             for j in range(nb_data):
-                videoName = keys[j].split('-',1)[0] # ApplyMakeup_g01_c01
+                videoName = keys[j].split('-', 1)[0]  # ApplyMakeup_g01_c01
                 # print(' Video Name : {0}'.format(videoName))
                 if videoName not in self.dic_video_level_preds.keys():
-                    self.dic_video_level_preds[videoName] = preds[j,:]
+                    self.dic_video_level_preds[videoName] = preds[j, :]
                 else:
-                    self.dic_video_level_preds[videoName] += preds[j,:]
-        
-        video_level_preds = np.zeros((len(self.dic_video_level_preds),101))
+                    self.dic_video_level_preds[videoName] += preds[j, :]
+
+        video_level_preds = np.zeros((len(self.dic_video_level_preds), 101))
         video_level_labels = np.zeros(len(self.dic_video_level_preds))
-        ii=0
+        ii = 0
 
         for key in sorted(self.dic_video_level_preds.keys()):
-            name = key.split('-',1)[0]
+            name = key.split('-', 1)[0]
 
             preds = self.dic_video_level_preds[name]
-            label = int(self.test_video[name])-1
-                
-            video_level_preds[ii,:] = preds
+            label = int(self.test_video[name]) - 1
+
+            video_level_preds[ii, :] = preds
             video_level_labels[ii] = label
-            ii+=1         
+            ii += 1
 
             prediction = np.argmax(preds)
             print('==> Name : {0}, Actual :{1}, Prediction : {2}'.format(name, label, prediction))
-            
+
             self.show_video(path, name, label, prediction)
 
     def show_video(self, path, filename, label, prediction):
@@ -194,15 +205,15 @@ class Motion_CNN():
 
             im = cv2.imread(image)
             height, width = im.shape[:2]
-            im = cv2.resize(im, (width*3, height*3), interpolation = cv2.INTER_AREA)
-            #im = cv2.resize(im,(224,224))
-            cv2.putText(im,'Actual : {0}({1}), Pred : {2}'.format(label, filename.split('_',1)[0], prediction), 
-                        bottomLeftCornerOfText, 
-                        font, 
+            im = cv2.resize(im, (width * 3, height * 3), interpolation=cv2.INTER_AREA)
+            # im = cv2.resize(im,(224,224))
+            cv2.putText(im, 'Actual : {0}({1}), Pred : {2}'.format(label, filename.split('_', 1)[0], prediction),
+                        bottomLeftCornerOfText,
+                        font,
                         fontScale,
                         fontColor,
                         lineType)
-            cv2.imshow('Action Recognition',im)
+            cv2.imshow('Action Recognition', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             sleep(0.05)
@@ -213,26 +224,26 @@ class Motion_CNN():
         self.build_model()
         self.resume_and_evaluate()
         cudnn.benchmark = True
-        
+
         for self.epoch in range(self.start_epoch, self.nb_epochs):
             self.train_1epoch()
             prec1, val_loss = self.validate_1epoch()
             is_best = prec1 > self.best_prec1
-            #lr_scheduler
+            # lr_scheduler
             self.scheduler.step(val_loss)
             # save model
             if is_best:
                 self.best_prec1 = prec1
-                with open('record/motion/motion_video_preds.pickle','wb') as f:
-                    pickle.dump(self.dic_video_level_preds,f)
-                f.close() 
-            
+                with open('record/motion/motion_video_preds.pickle', 'wb') as f:
+                    pickle.dump(self.dic_video_level_preds, f)
+                f.close()
+
             save_checkpoint({
                 'epoch': self.epoch,
                 'state_dict': self.model.state_dict(),
                 'best_prec1': self.best_prec1,
-                'optimizer' : self.optimizer.state_dict()
-            },is_best,'record/motion/checkpoint.pth.tar','record/motion/model_best.pth.tar')
+                'optimizer': self.optimizer.state_dict()
+            }, is_best, 'record/motion/checkpoint.pth.tar', 'record/motion/model_best.pth.tar')
 
     def train_1epoch(self):
         print('==> Epoch:[{0}/{1}][training stage]'.format(self.epoch, self.nb_epochs))
@@ -242,19 +253,18 @@ class Motion_CNN():
         losses = AverageMeter()
         top1 = AverageMeter()
         top5 = AverageMeter()
-        #switch to train mode
-        self.model.train()    
+        # switch to train mode
+        self.model.train()
         end = time.time()
         # mini-batch training
         progress = tqdm(self.train_loader)
-        for i, (data,label) in enumerate(progress):
-
+        for i, (data, label) in enumerate(progress):
             # measure data loading time
             data_time.update(time.time() - end)
-            
+
             label = label.cuda(async=True)
-            input_var = Variable(data).cuda()
-            target_var = Variable(label).cuda()
+            input_var = Variable(data).cpu()
+            target_var = Variable(label).cpu()
 
             # compute output
             print(' Shape of input data {0}'.format(input_var.shape))
@@ -263,11 +273,6 @@ class Motion_CNN():
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, label, topk=(1, 5))
-            ############## Orignal Codes ################
-            #losses.update(loss.data[0], data.size(0))
-            #top1.update(prec1[0], data.size(0))
-            #top5.update(prec5[0], data.size(0))
-            ############## Modification #################
             losses.update(loss.data, data.size(0))
             top1.update(prec1, data.size(0))
             top5.update(prec5, data.size(0))
@@ -280,36 +285,29 @@ class Motion_CNN():
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-        
-        info = {'Epoch':[self.epoch],
-                'Batch Time':[round(batch_time.avg,3)],
-                'Data Time':[round(data_time.avg,3)],
-                'Loss':[round(losses.avg,5)],
-                'Prec@1':[round(top1.avg,4)],
-                'Prec@5':[round(top5.avg,4)],
+
+        info = {'Epoch': [self.epoch],
+                'Batch Time': [round(batch_time.avg, 3)],
+                'Data Time': [round(data_time.avg, 3)],
+                'Loss': [round(losses.avg, 5)],
+                'Prec@1': [round(top1.avg, 4)],
+                'Prec@5': [round(top5.avg, 4)],
                 'lr': self.optimizer.param_groups[0]['lr']
                 }
-        record_info(info, 'record/motion/opf_train.csv','train')
+        record_info(info, 'record/motion/opf_train.csv', 'train')
 
     def validate_1epoch(self):
         print('==> Epoch:[{0}/{1}][validation stage]'.format(self.epoch, self.nb_epochs))
 
         batch_time = AverageMeter()
-        losses = AverageMeter()
-        top1 = AverageMeter()
-        top5 = AverageMeter()
         # switch to evaluate mode
         self.model.eval()
-        self.dic_video_level_preds={}
+        self.dic_video_level_preds = {}
         end = time.time()
         progress = tqdm(self.test_loader)
-        for i, (keys,data,label) in enumerate(progress):
-            
-            #data = data.sub_(127.353346189).div_(14.971742063)
-            #label = label.cuda(async=True)
-            data_var = Variable(data, volatile=True).cuda(async=True)
-            #label_var = Variable(label, volatile=True).cuda(async=True)
+        for i, (keys, data, label) in enumerate(progress):
 
+            data_var = Variable(data, volatile=True).cuda(async=True)
             # compute output
             print(' Shape of input data {0} : {1}'.format(keys, data_var.shape))
             output = self.model(data_var)
@@ -317,58 +315,59 @@ class Motion_CNN():
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            #Calculate video level prediction
+            # Calculate video level prediction
             preds = output.data.cpu().numpy()
             nb_data = preds.shape[0]
             for j in range(nb_data):
-                videoName = keys[j].split('-',1)[0] # ApplyMakeup_g01_c01
+                videoName = keys[j].split('-', 1)[0]  # ApplyMakeup_g01_c01
                 if videoName not in self.dic_video_level_preds.keys():
-                    self.dic_video_level_preds[videoName] = preds[j,:]
+                    self.dic_video_level_preds[videoName] = preds[j, :]
                 else:
-                    self.dic_video_level_preds[videoName] += preds[j,:]
-                    
-        #Frame to video level accuracy
+                    self.dic_video_level_preds[videoName] += preds[j, :]
+
+        # Frame to video level accuracy
         video_top1, video_top5, video_loss = self.frame2_video_level_accuracy()
-        info = {'Epoch':[self.epoch],
-                'Batch Time':[round(batch_time.avg,3)],
-                'Loss':[round(video_loss,5)],
-                'Prec@1':[round(video_top1,3)],
-                'Prec@5':[round(video_top5,3)]
+        info = {'Epoch': [self.epoch],
+                'Batch Time': [round(batch_time.avg, 3)],
+                'Loss': [round(video_loss, 5)],
+                'Prec@1': [round(video_top1, 3)],
+                'Prec@5': [round(video_top5, 3)]
                 }
-        record_info(info, 'record/motion/opf_test.csv','test')
+        record_info(info, 'record/motion/opf_test.csv', 'test')
         return video_top1, video_loss
 
     def frame2_video_level_accuracy(self):
-     
+
         correct = 0
-        video_level_preds = np.zeros((len(self.dic_video_level_preds),101))
+        video_level_preds = np.zeros((len(self.dic_video_level_preds), 101))
         video_level_labels = np.zeros(len(self.dic_video_level_preds))
-        ii=0
+        ii = 0
 
         for key in sorted(self.dic_video_level_preds.keys()):
-            name = key.split('-',1)[0]
+            name = key.split('-', 1)[0]
 
             preds = self.dic_video_level_preds[name]
-            label = int(self.test_video[name])-1
-                
-            video_level_preds[ii,:] = preds
+            label = int(self.test_video[name]) - 1
+
+            video_level_preds[ii, :] = preds
             video_level_labels[ii] = label
-            ii+=1         
+            ii += 1
             if np.argmax(preds) == (label):
-                correct+=1
+                correct += 1
             # print('==> Label(String : Number) :[{0} : {1}]'.format(name, label))
             # print('==> Preds :[{0}]'.format(zip(self.dic_video_level_preds.keys(), preds)))
-        #top1 top5
+        # top1 top5
         video_level_labels = torch.from_numpy(video_level_labels).long()
         video_level_preds = torch.from_numpy(video_level_preds).float()
 
-        loss = self.criterion(Variable(video_level_preds).cuda(), Variable(video_level_labels).cuda())    
-        top1,top5 = accuracy(video_level_preds, video_level_labels, topk=(1,5))     
-                            
+        loss = self.criterion(Variable(video_level_preds).cuda(), Variable(video_level_labels).cuda())
+        top1, top5 = accuracy(video_level_preds, video_level_labels, topk=(1, 5))
+
         top1 = float(top1.numpy())
         top5 = float(top5.numpy())
-            
-        return top1,top5,loss.data.cpu().numpy()
 
-if __name__=='__main__':
+        return top1, top5, loss.data.cpu().numpy()
+
+
+if __name__ == '__main__':
     main()

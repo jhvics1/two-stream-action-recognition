@@ -1,18 +1,15 @@
-import torch.nn as nn
-import math
-import numpy as np
-import torch.utils.model_zoo as model_zoo
+# import torch.nn as nn
+# import math
+# import numpy as np
+# import torch.utils.model_zoo as model_zoo
+# from torch.autograd import Variable
 import torch
-from torch.autograd import Variable
-
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
-
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
-
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -105,8 +102,8 @@ class ResNet(nn.Module):
     def __init__(self, block, layers, nb_classes=101, channel=20):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1_custom = nn.Conv2d(channel, 64, kernel_size=7, stride=2, padding=3,   
-                               bias=False)
+        self.conv1_custom = nn.Conv2d(channel, 64, kernel_size=7, stride=2, padding=3,
+                                      bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -158,89 +155,87 @@ class ResNet(nn.Module):
         return out
 
 
-def resnet18(pretrained=False, channel= 20, **kwargs):
+def resnet18(pretrained=False, channel=20, **kwargs):
     """Constructs a ResNet-18 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
-       pretrain_dict = model_zoo.load_url(model_urls['resnet18'])                  # modify pretrain code
-       model_dict = model.state_dict()
-       model_dict=weight_transform(model_dict, pretrain_dict, channel)
-       model.load_state_dict(model_dict)
+        pretrain_dict = model_zoo.load_url(model_urls['resnet18'])  # modify pretrain code
+        model_dict = model.state_dict()
+        model_dict = weight_transform(model_dict, pretrain_dict, channel)
+        model.load_state_dict(model_dict)
     return model
 
 
-def resnet34(pretrained=False, channel= 20, **kwargs):
-
+def resnet34(pretrained=False, channel=20, **kwargs):
     model = ResNet(BasicBlock, [3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
-       pretrain_dict = model_zoo.load_url(model_urls['resnet34'])                  # modify pretrain code
-       model_dict = model.state_dict()
-       model_dict=weight_transform(model_dict, pretrain_dict, channel)
-       model.load_state_dict(model_dict)
+        pretrain_dict = model_zoo.load_url(model_urls['resnet34'])  # modify pretrain code
+        model_dict = model.state_dict()
+        model_dict = weight_transform(model_dict, pretrain_dict, channel)
+        model.load_state_dict(model_dict)
     return model
 
 
-def resnet50(pretrained=False, channel= 20, **kwargs):
-
+def resnet50(pretrained=False, channel=20, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
-       pretrain_dict = model_zoo.load_url(model_urls['resnet50'])                  # modify pretrain code
-       model_dict = model.state_dict()
-       model_dict=weight_transform(model_dict, pretrain_dict, channel)
-       model.load_state_dict(model_dict)
+        pretrain_dict = model_zoo.load_url(model_urls['resnet50'])  # modify pretrain code
+        model_dict = model.state_dict()
+        model_dict = weight_transform(model_dict, pretrain_dict, channel)
+        model.load_state_dict(model_dict)
     return model
 
 
-def resnet101(pretrained=False, channel= 20, **kwargs):
-
-    model = ResNet(Bottleneck, [3, 4, 23, 3],nb_classes=101, channel=channel, **kwargs)
+def resnet101(pretrained=False, channel=20, **kwargs):
+    model = ResNet(Bottleneck, [3, 4, 23, 3], nb_classes=101, channel=channel, **kwargs)
     if pretrained:
-       pretrain_dict = model_zoo.load_url(model_urls['resnet101'])                  # modify pretrain code
-       model_dict = model.state_dict()
-       model_dict=weight_transform(model_dict, pretrain_dict, channel)
-       model.load_state_dict(model_dict)
+        pretrain_dict = model_zoo.load_url(model_urls['resnet101'])  # modify pretrain code
+        model_dict = model.state_dict()
+        model_dict = weight_transform(model_dict, pretrain_dict, channel)
+        model.load_state_dict(model_dict)
 
     return model
 
 
 def resnet152(pretrained=False, **kwargs):
-
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
     return model
 
+
 def cross_modality_pretrain(conv1_weight, channel):
     # transform the original 3 channel weight to "channel" channel
-    S=0
+    S = 0
     for i in range(3):
-        S += conv1_weight[:,i,:,:]
-    avg = S/3.
-    new_conv1_weight = torch.FloatTensor(64,channel,7,7)
-    #print type(avg),type(new_conv1_weight)
+        S += conv1_weight[:, i, :, :]
+    avg = S / 3.
+    new_conv1_weight = torch.FloatTensor(64, channel, 7, 7)
+    # print type(avg),type(new_conv1_weight)
     for i in range(channel):
-        new_conv1_weight[:,i,:,:] = avg.data
+        new_conv1_weight[:, i, :, :] = avg.data
     return new_conv1_weight
 
+
 def weight_transform(model_dict, pretrain_dict, channel):
-    weight_dict  = {k:v for k, v in pretrain_dict.items() if k in model_dict}
-    #print pretrain_dict.keys()
+    weight_dict = {k: v for k, v in pretrain_dict.items() if k in model_dict}
+    # print pretrain_dict.keys()
     w3 = pretrain_dict['conv1.weight']
-    #print type(w3)
+    # print type(w3)
     if channel == 3:
         wt = w3
     else:
-        wt = cross_modality_pretrain(w3,channel)
+        wt = cross_modality_pretrain(w3, channel)
 
     weight_dict['conv1_custom.weight'] = wt
     model_dict.update(weight_dict)
     return model_dict
 
-#Test network
+
+# Test network
 if __name__ == '__main__':
-    model = resnet34(pretrained= True, channel=10)
+    model = resnet34(pretrained=True, channel=10)
     print model
-     
